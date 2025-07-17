@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Management Panel</h1>
+
+<h2>Produkte hinzufügen</h2>
+<form method="post" enctype="multipart/form-data" style="max-width: 400px;">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" name="add_product" class="btn btn-primary">Produkt hinzufügen</button>
+</form>
+
+<hr />
+
+<h2>Produkte</h2>
+<table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+  <thead>
+    <tr style="background-color: #eee;">
+      <th>Name</th>
+      <th>Beschreibung</th>
+      <th>Preis (€)</th>
+      <th>Verfügbar</th>
+      <th>Bild</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for product in products %}
+    <tr>
+      <td>{{ product.name }}</td>
+      <td>{{ product.description|linebreaksbr }}</td>
+      <td>{{ product.price }}</td>
+      <td>{{ product.available|yesno:"Ja,Nein" }}</td>
+      <td>
+        {% if product.image %}
+          <img src="{{ product.image.url }}" alt="{{ product.name }}" style="height: 60px;"/>
+        {% else %}
+          Kein Bild
+        {% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5">Keine Produkte gefunden.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<hr />
+
+<h2>Kaufanfragen</h2>
+<table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+  <thead>
+    <tr style="background-color: #eee;">
+      <th>Produkt</th>
+      <th>Käufer</th>
+      <th>Nachricht</th>
+      <th>Farbe 1</th>
+      <th>Farbe 2</th>
+      <th>Datum</th>
+      <th>Aktionen</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for request in purchase_requests %}
+    <tr>
+      <td>{{ request.product.name }}</td>
+      <td>{{ request.buyer.username }} ({{ request.buyer.email }})</td>
+      <td>{{ request.message|default:"Keine Nachricht" }}</td>
+      <td>{{ request.color1|default:"-" }}</td>
+      <td>{{ request.color2|default:"-" }}</td>
+      <td>{{ request.requested_at|date:"d.m.Y H:i" }}</td>
+      <td>
+        <a href="{% url 'accept_request' request.id %}" style="color: green; font-weight: bold;">Akzeptieren</a>
+        |
+        <a href="{% url 'reject_request' request.id %}" style="color: red; font-weight: bold;">Ablehnen</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="7">Keine Kaufanfragen.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<hr />
+
+<h2>Produkte in Arbeit</h2>
+<table border="1" cellpadding="8" cellspacing="0" style="width: 100%; border-collapse: collapse;">
+  <thead>
+    <tr style="background-color: #eee;">
+      <th>Produkt</th>
+      <th>Käufer</th>
+      <th>Farbe 1</th>
+      <th>Farbe 2</th>
+      <th>Status</th>
+      <th>Aktionen</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in products_to_make %}
+    <tr>
+      <td>{{ item.product.name }}</td>
+      <td>{{ item.buyer.username }}</td>
+      <td>{{ item.color1 }}</td>
+      <td>{{ item.color2 }}</td>
+      <td>{{ item.get_status_display }}</td>
+      <td>
+        {% if item.status == 'in_progress' %}
+        <form method="post" action="{% url 'product_finished' item.id %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" style="background:#27ae60; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">
+            Produkt fertig
+          </button>
+        </form>
+        {% endif %}
+        <form method="post" action="{% url 'product_picked_up' item.id %}" style="display:inline; margin-left:5px;">
+          {% csrf_token %}
+          <button type="submit" style="background:#c0392b; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer;">
+            Abgeholt
+          </button>
+        </form>
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="6" style="text-align:center;">Keine Produkte in Arbeit.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Startseite - Armband Boutique{% endblock %}
+
+{% block content %}
+{% load static %}
+<section class="hero">
+  <div class="container">
+    <h2>🌟✨ Entdecke unsere schönen Armbänder! ✨🌟</h2>
+    <p class="price">Nur <strong>2,50€</strong> 🛍💖</p>
+    <p class="promo">Ideal für dich oder als Geschenk! 🎁💕 Nutze die Gelegenheit und strahle im Stil! ✨</p>
+    
+  </div>
+</section>
+
+<section class="products container">
+  <h3>Unsere Kollektion</h3>
+{% for product in products %}
+  <div class="product-grid">
+    <div class="product-card">
+      <img src="{{ product.image.url }}" alt="{{ product.name }}">
+      <h4>{{ product.name }}</h4>
+      <p>{{ product.description }}</p>
+      <span>{{ product.price }}€</span>
+      <br><br>
+      <a href="{% url 'shop' %}" class="btn">Jetzt shoppen</a>
+    </div>
+  </div>
+{% endfor %}
+    <!-- Weitere Produkte... -->
+  </div>
+</section>
+{% endblock %}

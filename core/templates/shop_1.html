@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Shop - Armband Boutique{% endblock %}
+
+{% block content %}
+<h1>Unsere Armbänder</h1>
+
+<div class="gallery" style="display:flex; flex-wrap: wrap; gap: 30px; justify-content: center;">
+  {% for product in products %}
+  <div class="product" style="text-align:center; width:220px; border:1px solid #ddd; padding:15px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); background:#fafafa;">
+    <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width:200px; height:200px; object-fit:cover; border-radius:8px; margin-bottom:10px;" />
+    <h3>{{ product.name }}</h3>
+    {% if user.is_authenticated %}
+      <label for="color1-{{ product.id }}">Farbe 1:</label>
+      <select id="color1-{{ product.id }}">
+    <option value="Rot">Rot</option>
+    <option value="Blau">Blau</option>
+    <option value="Grün">Grün</option>
+    <option value="Gelb">Gelb</option>
+    <option value="Orange">Orange</option>
+    <option value="Lila">Lila</option>
+    <option value="Schwarz">Schwarz</option>
+    <option value="Weiß">Weiß</option>
+    <option value="Braun">Braun</option>
+    <option value="Rosa">Rosa</option>
+    <option value="Hellblau">Hellblau</option>
+    <option value="Dunkelgrün">Dunkelgrün</option>
+    <option value="Türkis">Türkis</option>
+    <option value="Silber">Silber</option>
+    <option value="Gold">Gold</option>
+        <!-- Add more colors -->
+      </select>
+
+      <label for="color2-{{ product.id }}">Farbe 2:</label>
+      <select id="color2-{{ product.id }}">
+        <option value="Weiß">Weiß</option>
+        <option value="Schwarz">Schwarz</option>
+        <option value="Orange">Orange</option>
+        <option value="Lila">Lila</option>
+        <!-- Add more colors -->
+      </select>
+      <br/><br/>
+      <button onclick="sendPurchaseRequest({{ product.id }})" style="background:#c0392b; color:#fff; border:none; padding:10px 16px; border-radius:5px; cursor:pointer; font-weight:bold; transition: background-color 0.3s;">
+        Nachricht zum Kauf senden
+      </button>
+    {% else %}
+      <a href="{% url 'login' %}">
+        <button style="background:#7f8c8d; color:#fff; border:none; padding:10px 16px; border-radius:5px; cursor:pointer; font-weight:bold;">
+          Zum Kauf einloggen
+        </button>
+      </a>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<div id="status" style="margin-top:20px; text-align:center; font-weight:600;"></div>
+
+<script>
+async function sendPurchaseRequest(productId) {
+  const color1 = document.getElementById('color1-' + productId).value;
+  const color2 = document.getElementById('color2-' + productId).value;
+
+  try {
+    const response = await fetch("{% url 'send_purchase_request' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie('csrftoken'),
+      },
+      body: JSON.stringify({ product_id: productId, color1: color1, color2: color2 }),
+    });
+
+    const data = await response.json();
+
+    const status = document.getElementById('status');
+    if (data.status === "success") {
+      status.textContent = "Nachricht erfolgreich gesendet!";
+      status.style.color = 'green';
+    } else {
+      status.textContent = "Fehler beim Senden: " + data.message;
+      status.style.color = 'red';
+    }
+  } catch (error) {
+    const status = document.getElementById('status');
+    status.textContent = "Fehler: " + error.message;
+    status.style.color = 'red';
+  }
+}
+
+// Helper to get CSRF token cookie
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let c of cookies) {
+      const cookie = c.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+
+{% endblock %}
