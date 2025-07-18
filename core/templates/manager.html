@@ -53,6 +53,7 @@
     <tr style="background-color: #eee;">
       <th>Produkt</th>
       <th>Käufer</th>
+      <th>Käufer - Name</th>
       <th>Nachricht</th>
       <th>Farbe 1</th>
       <th>Farbe 2</th>
@@ -65,6 +66,7 @@
     <tr>
       <td>{{ request.product.name }}</td>
       <td>{{ request.buyer.username }} ({{ request.buyer.email }})</td>
+      <td>{{ request.buyer.first_name }} - {{request.buyer.last_name}}</td>
       <td>{{ request.message|default:"Keine Nachricht" }}</td>
       <td>{{ request.color1|default:"-" }}</td>
       <td>{{ request.color2|default:"-" }}</td>
@@ -89,6 +91,7 @@
     <tr style="background-color: #eee;">
       <th>Produkt</th>
       <th>Käufer</th>
+      <th>Käufer - Name</th>
       <th>Farbe 1</th>
       <th>Farbe 2</th>
       <th>Status</th>
@@ -100,6 +103,7 @@
     <tr>
       <td>{{ item.product.name }}</td>
       <td>{{ item.buyer.username }}</td>
+      <td>{{ request.buyer.first_name }} - {{request.buyer.last_name}}</td>
       <td>{{ item.color1 }}</td>
       <td>{{ item.color2 }}</td>
       <td>{{ item.get_status_display }}</td>

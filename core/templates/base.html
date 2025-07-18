@@ -29,6 +29,12 @@
           <li><a href="{% url 'login' %}">Login</a></li>
           <li><a href="{% url 'signup' %}">Signup</a></li>
         {% endif %}
+        {% if user.is_staff %}
+          <button onclick="location.href = '{% url 'manager' %}'"
+                  style="background:#c0392b; color:#fff; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">
+            Manager
+          </button>
+        {% endif %}
 
       </ul>
     </nav>

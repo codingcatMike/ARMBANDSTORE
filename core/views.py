@@ -40,8 +40,6 @@ def send_purchase_request(request):
         if not user.email:
             return JsonResponse({"status": "error", "message": "Benutzer hat keine E-Mail-Adresse"}, status=400)
 
-        if PurchaseRequest.objects.filter(product=product, buyer=user).exists():
-            return JsonResponse({"status": "error", "message": "Kaufanfrage existiert bereits."}, status=400)
 
         # Create purchase request with colors
         pr = PurchaseRequest.objects.create(product=product, buyer=user, color1=color1, color2=color2)
@@ -55,7 +53,7 @@ def send_purchase_request(request):
             f"E-Mail: {user.email}\n"
             f"Farben: {color1}, {color2}\n"
         )
-        send_email_via_api("system@webdevode.de", subject, message)
+        send_email_via_api("gpt0Mike@gmail.com", subject, message)
 
         return JsonResponse({"status": "success"})
 
