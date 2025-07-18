@@ -46,9 +46,8 @@ def send_purchase_request(request):
         # Create purchase request with colors
         pr = PurchaseRequest.objects.create(product=product, buyer=user, color1=color1, color2=color2)
         pr.save()
-      
 
-        # Send email notification to shop owner
+        # Send email notification to shop owner using the custom API
         subject = f"Kaufanfrage für {product.name}"
         message = (
             f"Es wurde eine Kaufanfrage für '{product.name}' gesendet.\n\n"
@@ -56,10 +55,7 @@ def send_purchase_request(request):
             f"E-Mail: {user.email}\n"
             f"Farben: {color1}, {color2}\n"
         )
-        from_email = None  # Uses DEFAULT_FROM_EMAIL in settings.py
-        to_email = ["system@webdevode.de"]
-
-        send_mail(subject, message, from_email, to_email)
+        send_email_via_api("system@webdevode.de", subject, message)
 
         return JsonResponse({"status": "success"})
 
@@ -67,7 +63,6 @@ def send_purchase_request(request):
         return JsonResponse({"status": "error", "message": "Ungültiges JSON"}, status=400)
     except Exception as e:
         return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
 
 @login_required
 def shop_1(request):
@@ -111,19 +106,11 @@ def manager_view(request):
 
 
 
-def send_email_via_api(to, message):
-    api_url = "https://api-3elg.onrender.com/send_email"
-    headers = {"X-API-KEY": "your_api_key_here"}  # Omit or set if needed
-    payload = {"to": to, "message": message}
-    try:
-        res = requests.post(api_url, json=payload, headers=headers)
-        res.raise_for_status()
-    except Exception as e:
-        print("Email API error:", e)
 
 @staff_member_required
 def accept_request(request, request_id):
     purchase_request = get_object_or_404(PurchaseRequest, id=request_id)
+
     ProductToMake.objects.create(
         product=purchase_request.product,
         buyer=purchase_request.buyer,
@@ -131,7 +118,8 @@ def accept_request(request, request_id):
         color2=purchase_request.color2 or ""
     )
 
-    msg = (
+    subject = f"Ihre Kaufanfrage zu '{purchase_request.product.name}' wurde akzeptiert"
+    message = (
         f"Hallo {purchase_request.buyer.username},\n\n"
         f"wir freuen uns, Ihnen mitzuteilen, dass Ihre Kaufanfrage für das Produkt '{purchase_request.product.name}' akzeptiert wurde.\n"
         "Unser Team wird sich in Kürze mit weiteren Informationen bei Ihnen melden.\n\n"
@@ -140,7 +128,7 @@ def accept_request(request, request_id):
         "Ihr Kundenservice-Team"
     )
 
-    send_email_via_api(purchase_request.buyer.email, msg)
+    send_email_via_api(purchase_request.buyer.email, subject, message)
     purchase_request.delete()
     return redirect('manager')
 
@@ -149,7 +137,8 @@ def accept_request(request, request_id):
 def reject_request(request, request_id):
     purchase_request = get_object_or_404(PurchaseRequest, id=request_id)
 
-    msg = (
+    subject = f"Ihre Kaufanfrage zu '{purchase_request.product.name}' wurde leider abgelehnt"
+    message = (
         f"Hallo {purchase_request.buyer.username},\n\n"
         f"leider müssen wir Ihnen mitteilen, dass Ihre Kaufanfrage für das Produkt '{purchase_request.product.name}' nicht erfüllt werden kann.\n"
         "Wir bitten um Ihr Verständnis.\n\n"
@@ -158,7 +147,7 @@ def reject_request(request, request_id):
         "Ihr Kundenservice-Team"
     )
 
-    send_email_via_api(purchase_request.buyer.email, msg)
+    send_email_via_api(purchase_request.buyer.email, subject, message)
     purchase_request.delete()
     return redirect('manager')
 
@@ -174,7 +163,8 @@ def product_finished(request, product_to_make_id):
     product_to_make.status = 'finished'
     product_to_make.save()
 
-    msg = (
+    subject = f"Ihr Produkt '{product_to_make.product.name}' ist fertig!"
+    message = (
         f"Hallo {product_to_make.buyer.username},\n\n"
         f"Ihr bestelltes Produkt '{product_to_make.product.name}' "
         f"mit den Farben {product_to_make.color1} und {product_to_make.color2} "
@@ -182,9 +172,8 @@ def product_finished(request, product_to_make_id):
         "Viele Grüße,\nIhr Armband Boutique Team"
     )
 
-    send_email_via_api(product_to_make.buyer.email, msg)
+    send_email_via_api(product_to_make.buyer.email, subject, message)
     return redirect('manager')
-
 
 @staff_member_required
 @require_POST
@@ -193,12 +182,12 @@ def product_picked_up(request, product_to_make_id):
     product_to_make.delete()
     return redirect('manager')
 
-def send_email_via_api(to, message):
+def send_email_via_api(to, subject, message):
     api_url = "https://api-3elg.onrender.com/send_email"
-    headers = {"X-API-KEY": "TEST"}  # Remove if not needed
-    payload = {"to": to, "message": message}
+    headers = {"X-API-KEY": "TEST"}  # Remove if not used
+    payload = {"to": to, "subject": subject, "message": message}
     try:
         res = requests.post(api_url, json=payload, headers=headers)
         res.raise_for_status()
     except Exception as e:
-        print("Failed to send email:", e)
+        print("Email API error:", e)
