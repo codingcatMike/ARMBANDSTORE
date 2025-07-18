@@ -9,6 +9,7 @@ from django.core.mail import send_mail
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
 from django.contrib.auth.models import User
+import requests
 
 from .models import *
 from .forms import ProductForm
@@ -109,11 +110,20 @@ def manager_view(request):
     return render(request, "manager.html", context)
 
 
+
+def send_email_via_api(to, message):
+    api_url = "https://api-3elg.onrender.com/send_email"
+    headers = {"X-API-KEY": "your_api_key_here"}  # Omit or set if needed
+    payload = {"to": to, "message": message}
+    try:
+        res = requests.post(api_url, json=payload, headers=headers)
+        res.raise_for_status()
+    except Exception as e:
+        print("Email API error:", e)
+
 @staff_member_required
 def accept_request(request, request_id):
     purchase_request = get_object_or_404(PurchaseRequest, id=request_id)
-    buyer_email = purchase_request.buyer.email
-    product_name = purchase_request.product.name
     ProductToMake.objects.create(
         product=purchase_request.product,
         buyer=purchase_request.buyer,
@@ -121,16 +131,16 @@ def accept_request(request, request_id):
         color2=purchase_request.color2 or ""
     )
 
-    subject = f"Ihre Kaufanfrage zu '{product_name}' wurde akzeptiert"
-    message = (
+    msg = (
         f"Hallo {purchase_request.buyer.username},\n\n"
-        f"wir freuen uns, Ihnen mitzuteilen, dass Ihre Kaufanfrage für das Produkt '{product_name}' akzeptiert wurde.\n"
+        f"wir freuen uns, Ihnen mitzuteilen, dass Ihre Kaufanfrage für das Produkt '{purchase_request.product.name}' akzeptiert wurde.\n"
         "Unser Team wird sich in Kürze mit weiteren Informationen bei Ihnen melden.\n\n"
         "Sollten Sie Fragen haben, antworten Sie einfach auf diese E-Mail.\n\n"
         "Vielen Dank für Ihr Interesse!\n"
         "Ihr Kundenservice-Team"
     )
-    send_mail(subject, message, None, [buyer_email])
+
+    send_email_via_api(purchase_request.buyer.email, msg)
     purchase_request.delete()
     return redirect('manager')
 
@@ -138,19 +148,17 @@ def accept_request(request, request_id):
 @staff_member_required
 def reject_request(request, request_id):
     purchase_request = get_object_or_404(PurchaseRequest, id=request_id)
-    buyer_email = purchase_request.buyer.email
-    product_name = purchase_request.product.name
 
-    subject = f"Ihre Kaufanfrage zu '{product_name}' wurde leider abgelehnt"
-    message = (
+    msg = (
         f"Hallo {purchase_request.buyer.username},\n\n"
-        f"leider müssen wir Ihnen mitteilen, dass Ihre Kaufanfrage für das Produkt '{product_name}' nicht erfüllt werden kann.\n"
+        f"leider müssen wir Ihnen mitteilen, dass Ihre Kaufanfrage für das Produkt '{purchase_request.product.name}' nicht erfüllt werden kann.\n"
         "Wir bitten um Ihr Verständnis.\n\n"
         "Falls Sie Fragen haben oder weitere Produkte interessieren, stehen wir Ihnen gerne zur Verfügung.\n\n"
         "Vielen Dank für Ihr Interesse!\n"
         "Ihr Kundenservice-Team"
     )
-    send_mail(subject, message, None, [buyer_email])
+
+    send_email_via_api(purchase_request.buyer.email, msg)
     purchase_request.delete()
     return redirect('manager')
 
@@ -161,26 +169,20 @@ def product_finished(request, product_to_make_id):
     product_to_make = get_object_or_404(ProductToMake, id=product_to_make_id)
 
     if product_to_make.status != 'in_progress':
-        # Already finished or invalid state
         return redirect('manager')
 
     product_to_make.status = 'finished'
     product_to_make.save()
 
-    # Notify buyer that product is ready for pickup
-    send_mail(
-        f"Ihr Produkt '{product_to_make.product.name}' ist fertig!",
-        (
-            f"Hallo {product_to_make.buyer.username},\n\n"
-            f"Ihr bestelltes Produkt '{product_to_make.product.name}' "
-            f"mit den Farben {product_to_make.color1} und {product_to_make.color2} "
-            "ist nun fertig und kann abgeholt werden.\n\n"
-            "Viele Grüße,\nIhr Armband Boutique Team"
-        ),
-        None,  # uses DEFAULT_FROM_EMAIL
-        [product_to_make.buyer.email],
+    msg = (
+        f"Hallo {product_to_make.buyer.username},\n\n"
+        f"Ihr bestelltes Produkt '{product_to_make.product.name}' "
+        f"mit den Farben {product_to_make.color1} und {product_to_make.color2} "
+        "ist nun fertig und kann abgeholt werden.\n\n"
+        "Viele Grüße,\nIhr Armband Boutique Team"
     )
 
+    send_email_via_api(product_to_make.buyer.email, msg)
     return redirect('manager')
 
 
@@ -191,3 +193,12 @@ def product_picked_up(request, product_to_make_id):
     product_to_make.delete()
     return redirect('manager')
 
+def send_email_via_api(to, message):
+    api_url = "https://api-3elg.onrender.com/send_email"
+    headers = {"X-API-KEY": "TEST"}  # Remove if not needed
+    payload = {"to": to, "message": message}
+    try:
+        res = requests.post(api_url, json=payload, headers=headers)
+        res.raise_for_status()
+    except Exception as e:
+        print("Failed to send email:", e)
